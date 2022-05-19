@@ -1,0 +1,169 @@
+library("pacman")
+p_load("vroom",
+       "dplyr",
+       "ggplot2",
+       "ggsci" ,
+       "agricolae", #para poder agrupar el Tukey
+       "ggpubr",   #gráficas simplificadas
+       "RVAideMemoire", #Prueva shapiro
+       "car",#para igualdad de varianzas
+       "tidyverse",
+       "scales") #para poner coma en los miles
+
+datos_dual <- vroom(file = "https://raw.githubusercontent.com/ManuelLaraMVZ/tG-8_OH/main/Dual%20tG%2B8_OH.csv")
+head(datos_dual)
+
+datos_dual
+
+datos_dual
+
+datos_dual$Tratamiento <- factor(datos_dual$Tratamiento, 
+                               levels = c("WT","DMSO", "eGFP", "0.9 µM 8-HQ", "tGAS1", "tGAS1+0.9 µM 8-HQ"))
+head(datos_dual )
+
+datos_dual2 <- datos_dual %>% 
+  select(Tratamiento, No_cel)
+
+head(datos_dual2)
+
+resumen_dual <- datos_dual2 %>% 
+  group_by(Tratamiento) %>% #decimos cuales son nuestros factores
+  get_summary_stats(type = "mean_sd") %>% #obtenemos la tabla
+  select(Tratamiento, n, mean, sd)
+resumen_dual
+
+write.csv(x=resumen_dual,
+          file = "Resumen_para_gráfica_dual.csv",
+          row.names = F)
+
+###################################################################################
+
+#visualizamos la distribución
+caja1 <- datos_dual2 %>% 
+  ggboxplot(x="Tratamiento",
+            y="No_cel",
+            color="Tratamiento",
+            palette = "jco")
+caja1
+
+modelo <- lm(No_cel~Tratamiento, data = datos_dual2)
+ggqqplot(residuals(modelo))
+
+#####################################3
+
+resumen_dual
+
+grafica_dual <- resumen_dual%>% 
+  ggplot(mapping = aes(x=Tratamiento,
+                       y=mean,
+                       fill="Tratamiento"))+
+  geom_col()
+
+grafica_dual
+
+byf.shapiro(No_cel~Tratamiento, data=datos_dual2)
+
+leveneTest(No_cel~Tratamiento, data=datos_dual2)
+fligner.test(No_cel~Tratamiento, data=datos_dual2)
+bartlett.test(No_cel~Tratamiento, data=datos_dual2)
+
+#Pasa prueba de normalidad para levene y fligner
+
+#Podemos proceer con el ANOVa
+
+###############################33
+
+ANOVA_dual<- aov( No_cel~Tratamiento,data = datos_dual2) #Ponemos de donde se sacan los datos y luego la relación
+
+#Visualizamos
+ANOVA_dual
+#obtenemos la tabla e anova
+summary.aov(ANOVA_dual)
+
+#Existe diferencia entre los tratamientos
+
+#obtenemos las similitudes
+
+agrupados_dual <- HSD.test(ANOVA_dual,"Tratamiento", group=T, console=T,
+                        main = "Celulas con tratamiento dual: MC y 8-OH")
+
+agrupados_dual
+
+#Hay que tomar los datos y copiarlos en un txt para poder realizar el análisis
+
+similitud <- c("a","a","a","b","b","c") #se construye con los resultados de las interacciones
+
+resumen_dual
+
+resumen_dual_ANOVA <- resumen_dual %>% 
+  select(Tratamiento, n, mean, sd) %>% 
+  mutate(similitud)
+
+resumen_dual_ANOVA
+
+write.csv(resumen_dual_ANOVA,
+          file = "resumen_ANOVA_dual.csv",
+          row.names = F)
+
+################################################################################
+
+
+
+Grafica_datos <- resumen_dual_ANOVA
+
+Grafica_datos
+
+barras1 <- Grafica_datos %>% 
+  ggplot(mapping = aes(x=Tratamiento,
+                       y=mean,
+                       fill=Tratamiento))+
+  geom_bar(stat = "identity", colour="black", size=.8)+
+  theme_classic()+
+  scale_fill_d3()+
+  theme_light()
+barras1
+
+miny=0
+maxy=140000
+
+marcasy <- seq(from=miny,
+               to=maxy,
+               by=20000)
+
+
+barras2 <- barras1+
+  scale_y_continuous(limits=c(miny,maxy), #colocamos los límites del eje y
+                     breaks=marcasy,
+                     expand=c(0,0),
+                     labels = comma)+
+  theme(legend.position="right")+ #empezamos a meter lo que le pusimos
+  theme(axis.text.x = element_blank())+
+  theme(axis.ticks.x = element_blank())+
+  theme(axis.line = element_line(size = 0.8))+
+  theme(axis.ticks.x = element_line(size = 0.8))+
+  theme(axis.ticks.y = element_line(size = 0.8))+
+  theme(legend.title= element_blank())+
+  
+  theme(legend.text = element_text(size = 16, face = "bold"))+
+  theme(axis.title.x = element_text(size=16, face="bold"))+
+  theme(axis.title.y = element_text(size=16, face="bold"))+
+  theme(axis.text.y = element_text(size=16, face = "bold"))+
+  theme(axis.ticks.x.bottom = element_blank())+
+  
+  geom_errorbar( aes(ymin=mean-sd, 
+                     ymax=mean+sd), 
+                 width=0.2, colour="black", alpha=1, size=.8)+
+  xlab("Treatment")+
+  ylab("Viability by Trypan blue \n (Number of cells)")+
+
+  
+  geom_text(aes(label=similitud),
+            nudge_x=0.25,     #REspecto al eje x que tanto cambia
+            nudge_y =5000,      #respecto al eje y que tanto cambia
+            size=6,
+            face="bold")+
+  scale_fill_simpsons()
+
+ barras2
+ 
+ 
