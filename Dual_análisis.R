@@ -4,7 +4,7 @@ p_load("vroom",
        "ggplot2",
        "ggsci" ,
        "agricolae", #para poder agrupar el Tukey
-       "ggpubr",   #gr�ficas simplificadas
+       "ggpubr",   #gráficas simplificadas
        "RVAideMemoire", #Prueva shapiro
        "car",#para igualdad de varianzas
        "tidyverse",
@@ -18,7 +18,7 @@ datos_dual
 datos_dual
 
 datos_dual$Tratamiento <- factor(datos_dual$Tratamiento, 
-                               levels = c("WT","DMSO", "eGFP", "0.9 �M 8-HQ", "tGAS1", "tGAS1+0.9 �M 8-HQ"))
+                               levels = c("WT","DMSO", "eGFP", "0.9 µM 8-HQ", "tGAS1", "tGAS1+0.9 µM 8-HQ"))
 head(datos_dual )
 
 datos_dual2 <- datos_dual %>% 
@@ -33,12 +33,12 @@ resumen_dual <- datos_dual2 %>%
 resumen_dual
 
 write.csv(x=resumen_dual,
-          file = "Resumen_para_gr�fica_dual.csv",
+          file = "Resumen_para_gráfica_dual.csv",
           row.names = F)
 
 ###################################################################################
 
-#visualizamos la distribuci�n
+#visualizamos la distribución
 caja1 <- datos_dual2 %>% 
   ggboxplot(x="Tratamiento",
             y="No_cel",
@@ -73,7 +73,7 @@ bartlett.test(No_cel~Tratamiento, data=datos_dual2)
 
 ###############################33
 
-ANOVA_dual<- aov( No_cel~Tratamiento,data = datos_dual2) #Ponemos de donde se sacan los datos y luego la relaci�n
+ANOVA_dual<- aov( No_cel~Tratamiento,data = datos_dual2) #Ponemos de donde se sacan los datos y luego la relación
 
 #Visualizamos
 ANOVA_dual
@@ -89,7 +89,7 @@ agrupados_dual <- HSD.test(ANOVA_dual,"Tratamiento", group=T, console=T,
 
 agrupados_dual
 
-#Hay que tomar los datos y copiarlos en un txt para poder realizar el an�lisis
+#Hay que tomar los datos y copiarlos en un txt para poder realizar el análisis
 
 similitud <- c("a","a","a","b","b","c") #se construye con los resultados de las interacciones
 
@@ -121,10 +121,11 @@ barras1 <- Grafica_datos %>%
   theme_classic()+
   scale_fill_d3()+
   theme_light()
+
 barras1
 
 miny=0
-maxy=140000
+maxy=150000
 
 marcasy <- seq(from=miny,
                to=maxy,
@@ -132,7 +133,7 @@ marcasy <- seq(from=miny,
 
 
 barras2 <- barras1+
-  scale_y_continuous(limits=c(miny,maxy), #colocamos los l�mites del eje y
+  scale_y_continuous(limits=c(miny,maxy), #colocamos los límites del eje y
                      breaks=marcasy,
                      expand=c(0,0),
                      labels = comma)+
@@ -162,8 +163,31 @@ barras2 <- barras1+
             nudge_y =5000,      #respecto al eje y que tanto cambia
             size=6,
             face="bold")+
-  scale_fill_simpsons()
+  scale_fill_simpsons()+
+  
+  theme( panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank())
 
  barras2
+
+ ggsave(filename = "Tratamiento_dual.png",
+        plot = barras2,
+        dpi = 600,
+        height = 5,
+        width = 9) 
  
+ #si queremos la gráfica sin gradillas ni borde poner lo siguiente
+ #+   theme(
+    # panel.grid.major = element_blank(),
+    # panel.grid.minor = element_blank(),
+     #panel.border = element_blank())
  
+ barras3 <- barras2+
+   scale_fill_grey()
+barras3 
+
+ggsave(filename = "Tratamiento_dualgris.png",
+       plot = barras3,
+       dpi = 600,
+       height = 5,
+       width = 9) 
